@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker compose:*)",
+      "Bash(curl -s http://localhost:9090/-/healthy)",
+      "Bash(curl -s http://localhost:3100/ready)",
+      "Bash(curl -s http://localhost:3200/ready)",
+      "Bash(curl -s http://localhost:3000/api/health)",
+      "Bash(python -m json.tool)",
+      "Bash(curl -s http://localhost:8888/metrics)"
+    ]
+  }
+}

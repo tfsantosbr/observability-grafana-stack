@@ -1,0 +1,97 @@
+# ─────────────────────────────────────────────────────────
+# OpenTelemetry Collector — full pipeline config
+#
+# RECEIVERS  : OTLP gRPC + HTTP (apps send here)
+# PROCESSORS : memory_limiter → batch (recommended order)
+# EXPORTERS  : Prometheus (metrics) | Loki (logs) | Tempo (traces)
+# ─────────────────────────────────────────────────────────
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins:
+            - "http://*"
+            - "https://*"
+
+  # Scrape the collector's own metrics
+  prometheus/self:
+    config:
+      scrape_configs:
+        - job_name: otel-collector
+          scrape_interval: 15s
+          static_configs:
+            - targets: ["localhost:8888"]
+
+processors:
+  # Prevent OOM — always first
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 75
+    spike_limit_percentage: 20
+
+  # Batch sends for efficiency — always after memory_limiter
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+    send_batch_max_size: 2048
+
+  # Enrich resource attributes
+  resourcedetection:
+    detectors: [env, system]
+    timeout: 5s
+    override: false
+
+exporters:
+  # ── Metrics → Prometheus (remote_write) ──────────────
+  prometheusremotewrite:
+    endpoint: http://prometheus:9090/api/v1/write
+    tls:
+      insecure: true
+
+  # ── Logs → Loki ──────────────────────────────────────
+  loki:
+    endpoint: http://loki:3100/loki/api/v1/push
+    default_labels_enabled:
+      exporter: false
+      job: true
+      instance: true
+      level: true
+
+  # ── Traces → Tempo (via OTLP) ────────────────────────
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+
+  # ── Debug (optional — set verbosity to detailed for troubleshooting) ──
+  debug:
+    verbosity: normal
+
+service:
+  telemetry:
+    metrics:
+      address: 0.0.0.0:8888
+
+  pipelines:
+    # Metrics: apps + collector self-metrics → Prometheus
+    metrics:
+      receivers: [otlp, prometheus/self]
+      processors: [memory_limiter, resourcedetection, batch]
+      exporters: [prometheusremotewrite, debug]
+
+    # Logs: apps → Loki
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, resourcedetection, batch]
+      exporters: [loki, debug]
+
+    # Traces: apps → Tempo
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resourcedetection, batch]
+      exporters: [otlp/tempo, debug]
