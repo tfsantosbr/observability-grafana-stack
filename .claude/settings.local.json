@@ -7,7 +7,18 @@
       "Bash(curl -s http://localhost:3200/ready)",
       "Bash(curl -s http://localhost:3000/api/health)",
       "Bash(python -m json.tool)",
-      "Bash(curl -s http://localhost:8888/metrics)"
+      "Bash(curl -s http://localhost:8888/metrics)",
+      "WebFetch(domain:grafana.com)",
+      "Bash(curl -s \"https://grafana.com/api/dashboards/9628/revisions/8/download\")",
+      "Read(//tmp/**)",
+      "Bash(curl -fsSL \"https://grafana.com/api/dashboards/19924/revisions/5/download\" -o \"aspnetcore.json\")",
+      "Bash(curl -fsSL \"https://grafana.com/api/dashboards/9628/revisions/8/download\" -o \"postgresql.json\")",
+      "Bash(curl -fsSL \"https://grafana.com/api/dashboards/10991/revisions/15/download\" -o \"rabbitmq.json\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(open\\('aspnetcore.json'\\)\\); print\\('inputs:', json.dumps\\(d.get\\('__inputs',[]\\), indent=2\\)\\)\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(open\\('postgresql.json'\\)\\); print\\('inputs:', json.dumps\\(d.get\\('__inputs',[]\\), indent=2\\)\\)\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(open\\('rabbitmq.json'\\)\\); print\\('inputs:', json.dumps\\(d.get\\('__inputs',[]\\), indent=2\\)\\)\")",
+      "Bash(curl -s -X POST http://localhost:3000/api/admin/provisioning/dashboards/reload)",
+      "Bash(curl -s \"http://localhost:3000/api/search?type=dash-db\")"
     ]
   }
 }
